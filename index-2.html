@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abacus Quiz</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Basic Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: none;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .container.active {
+            display: block;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #timer {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Welcome Page -->
+    <div id="welcome-page" class="container active">
+        <h1>Welcome to the Abacus Quiz</h1>
+        <label for="student-name">Enter your name:</label>
+        <input type="text" id="student-name" required>
+        <br><br>
+        <label for="question-count">How many questions would you like to do? (1-50)</label>
+        <input type="number" id="question-count" min="1" max="50" value="5">
+        <br><br>
+        <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+
+    <!-- Quiz Page -->
+    <div id="quiz-page" class="container">
+        <h2>Quiz Time!</h2>
+
+        <!-- Timer -->
+        <div id="timer-container">
+            <p>Time Left: <span id="timer">5:00</span></p>
+        </div>
+
+        <!-- Question Container -->
+        <div id="question-container">
+            <!-- The generated question will appear here -->
+        </div>
+        <br>
+
+        <label for="answer">Your Answer:</label>
+        <input type="number" id="answer">
+        <button onclick="submitAnswer()">Submit Answer</button>
+        <button id="next-question" onclick="nextQuestion()" style="display:none;">Next Question</button>
+    </div>
+
+    <!-- Result Page -->
+    <div id="result-page" class="container">
+        <h2>Quiz Results</h2>
+        <div id="result-container"></div>
+        <br>
+        <button onclick="generateCertificate()">Generate Certificate</button>
+        <br><br>
+        <button onclick="restartQuiz()">Restart Quiz</button>
+    </div>
+
+    <script>
+        let currentQuestion;
+        let score = 0;
+        let totalQuestions;
+        let currentQuestionIndex = 0;
+        let quizTime = 0;
+        let timerInterval;
+
+        function startQuiz() {
+            const name = document.getElementById('student-name').value;
+            totalQuestions = parseInt(document.getElementById('question-count').value, 10);
+
+            if (name.trim() === '' || totalQuestions <= 0 || totalQuestions > 50) {
+                alert('Please enter your name and select a valid number of questions (1-50).');
+                return;
+            }
+
+            // Store name and question count in session storage
+            sessionStorage.setItem('studentName', name);
+            sessionStorage.setItem('questionCount', totalQuestions);
+
+            // Hide welcome page, show quiz page
+            document.getElementById('welcome-page').classList.remove('active');
+            document.getElementById('quiz-page').classList.add('active');
+
+            // Start the quiz and timer
+            generateQuestion();
+            startTimer(totalQuestions);
+        }
+
+        function startTimer(questionsCount) {
+            quizTime = Math.floor((5 * 60 * questionsCount) / 50);
+            document.getElementById('timer').textContent = formatTime(quizTime);
+
+            timerInterval = setInterval(function() {
+                quizTime--;
+                document.getElementById('timer').textContent = formatTime(quizTime);
+
+                if (quizTime <= 0) {
+                    clearInterval(timerInterval);
+                    endQuiz();
+                }
+            }, 1000);
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        function generateQuestion() {
+            let numbers = [];
+            let operations = [];
+
+            for (let i = 0; i < 5; i++) {
+                numbers.push(Math.floor(Math.random() * 90) + 10); // 2-digit numbers
+                operations.push(Math.random() < 0.5 ? '+' : '-');
+            }
+
+            let questionText = '';
+            let answer = numbers[0];
+
+            for (let i = 1; i < numbers.length; i++) {
+                questionText += `${operations[i-1]} ${numbers[i]} `;
+                if (operations[i-1] === '+') {
+                    answer += numbers[i];
+                } else {
+                    answer -= numbers[i];
+                }
+            }
+
+            currentQuestion = {
+                question: `${numbers[0]} ${questionText.trim()}`,
+                answer: answer
+            };
+
+            document.getElementById('question-container').textContent = currentQuestion.question;
+            document.getElementById('answer').value = '';
+            document.getElementById('next-question').style.display = 'none';
+        }
+
+        function submitAnswer() {
+            const userAnswer = parseFloat(document.getElementById('answer').value);
+            if (userAnswer === currentQuestion.answer) {
+                score++;
+            }
+
+            currentQuestionIndex++;
+            if (currentQuestionIndex < totalQuestions) {
+                document.getElementById('next-question').style.display = 'inline';
+                document.getElementById('answer').disabled = true;
+            } else {
+                clearInterval(timerInterval);
+                endQuiz();
+            }
+        }
+
+        function nextQuestion() {
+            document.getElementById('next-question').style.display = 'none';
+            document.getElementById('answer').disabled = false;
+            generateQuestion();
+        }
+
+        function endQuiz() {
+            sessionStorage.setItem('score', score);
+            document.getElementById('quiz-page').classList.remove('active');
+            document.getElementById('result-page').classList.add('active');
+
+            document.getElementById('result-container').innerHTML = `You scored ${score} out of ${totalQuestions}.`;
+        }
+
+        function generateCertificate() {
+            const { jsPDF } = window.jspdf;
+            const name = sessionStorage.getItem('studentName');
+            const score = sessionStorage.getItem('score');
+            const totalQuestions = sessionStorage.getItem('questionCount');
+            const resultText = `This certificate is awarded to\n\n${name}\n\nfor scoring ${score} out of ${totalQuestions} in the Quiz.`;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600;
+            canvas.height = 400;
+
+            ctx.fillStyle = '#f9f9f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#8A2BE2';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+            ctx.fillStyle = '#000';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Certificate of Achievement', canvas.width / 2, 50);
+
+            ctx.font = '20px Arial';
+            ctx.fillText(resultText, canvas.width / 2, 150);
+
+            ctx.fillStyle = '#8A2BE2';
+            ctx.fillRect(10, 320, canvas.width - 20, 5);
+            ctx.fillText('Date: ' + new Date().toLocaleDateString(), canvas.width / 2, 350);
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF();
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+            pdf.save(`${name}_certificate.pdf`);
+        }
+
+        function restartQuiz() {
+            sessionStorage.clear();
+            location.reload();
+        }
+    </script>
+</body>
+</html>
