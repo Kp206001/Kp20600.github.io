@@ -161,7 +161,7 @@
                 answer: answer
             };
 
-            document.getElementById('question-container').textContent = currentQuestion.question;
+            document.getElementById('question-container').textContent = `Question ${currentQuestionIndex + 1}: ${currentQuestion.question}`;
             document.getElementById('answer').value = '';
         }
 
