@@ -88,28 +88,27 @@
         function generateQuestion() {
             let numbers = [];
             let operations = [];
+            let currentValue = Math.floor(Math.random() * 90) + 10; // Start with a 2-digit number
+            let questionText = `${currentValue} `;
 
-            for (let i = 0; i < 5; i++) {
-                numbers.push(Math.floor(Math.random() * 90) + 10); // 2-digit numbers
-                operations.push(Math.random() < 0.5 ? '+' : '-');
-            }
+            for (let i = 0; i < 4; i++) {
+                let nextNumber = Math.floor(Math.random() * 90) + 10; // Generate the next 2-digit number
+                let operation = Math.random() < 0.5 ? '-' : '+';
 
-            let questionText = '';
-            let answer = numbers[0];
-
-            for (let i = 1; i < numbers.length; i++) {
-                questionText += `${operations[i-1]} ${numbers[i]} `;
-                if (operations[i-1] === '+') {
-                    answer += numbers[i];
-                } else {
-                    answer -= numbers[i];
+                // Ensure no negative intermediate result
+                if (operation === '-' && currentValue < nextNumber) {
+                    operation = '+'; // Switch to addition if subtraction would go negative
                 }
+
+                // Update currentValue based on operation
+                currentValue = operation === '+' ? currentValue + nextNumber : currentValue - nextNumber;
+                questionText += `${operation} ${nextNumber} `;
             }
 
-            // Ensure the answer is always positive
-            answer = Math.abs(answer);
+            // Store the final positive answer
+            const answer = currentValue;
 
-            // Generate answer options
+            // Generate multiple-choice answer options
             const options = [answer];
             while (options.length < 4) {
                 let option = Math.floor(Math.random() * 200) + 1; // Random options between 1 and 200
@@ -122,7 +121,7 @@
             options.sort(() => Math.random() - 0.5);
 
             currentQuestion = {
-                question: `${numbers[0]} ${questionText.trim()}`,
+                question: questionText.trim(),
                 answer: answer,
                 options: options
             };
