@@ -3,87 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abacus Quiz</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <title>Quiz App</title>
     <style>
-        /* Basic Styles */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            display: none;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .container.active {
-            display: block;
-        }
-        h1, h2 {
-            text-align: center;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #timer {
-            font-size: 18px;
-        }
+        .container { display: none; text-align: center; margin-top: 50px; }
+        .active { display: block; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-
-    <!-- Welcome Page -->
     <div id="welcome-page" class="container active">
-        <h1>Welcome to the Abacus Quiz</h1>
+        <h1>Welcome to the Quiz</h1>
         <label for="student-name">Enter your name:</label>
-        <input type="text" id="student-name" required>
-        <br><br>
-        <label for="question-count">How many questions would you like to do? (1-50)</label>
-        <input type="number" id="question-count" min="1" max="50" value="5">
-        <br><br>
+        <input type="text" id="student-name" placeholder="Your Name" required><br><br>
+        <label for="question-count">Number of Questions (1-50):</label>
+        <input type="number" id="question-count" min="1" max="50" required><br><br>
         <button onclick="startQuiz()">Start Quiz</button>
     </div>
 
-    <!-- Quiz Page -->
     <div id="quiz-page" class="container">
         <h2>Quiz Time!</h2>
-
-        <!-- Timer -->
         <div id="timer-container">
             <p>Time Left: <span id="timer">5:00</span></p>
         </div>
-
-        <!-- Question Container -->
-        <div id="question-container">
-            <!-- The generated question will appear here -->
-        </div>
-        <br>
-
-        <label for="answer">Your Answer:</label>
-        <input type="number" id="answer">
-        <button onclick="submitAnswer()">Submit Answer</button>
+        <div id="question-container"></div>
+        <div id="answer-options"></div>
     </div>
 
-    <!-- Result Page -->
     <div id="result-page" class="container">
-        <h2>Quiz Results</h2>
+        <h2>Quiz Completed</h2>
         <div id="result-container"></div>
-        <br>
-        <button onclick="generateCertificate()">Generate Certificate</button>
-        <br><br>
+        <button onclick="generateCertificate()">Download Certificate</button>
         <button onclick="restartQuiz()">Restart Quiz</button>
     </div>
 
@@ -156,18 +106,35 @@
                 }
             }
 
+            // Ensure the answer is always positive
+            answer = Math.abs(answer);
+
+            // Generate answer options
+            const options = [answer];
+            while (options.length < 4) {
+                let option = Math.floor(Math.random() * 200) + 1; // Random options between 1 and 200
+                if (!options.includes(option)) {
+                    options.push(option);
+                }
+            }
+
+            // Shuffle options
+            options.sort(() => Math.random() - 0.5);
+
             currentQuestion = {
                 question: `${numbers[0]} ${questionText.trim()}`,
-                answer: answer
+                answer: answer,
+                options: options
             };
 
             document.getElementById('question-container').textContent = `Question ${currentQuestionIndex + 1}: ${currentQuestion.question}`;
-            document.getElementById('answer').value = '';
+            document.getElementById('answer-options').innerHTML = currentQuestion.options
+                .map((option, index) => `<button onclick="submitAnswer(${option})">${option}</button>`)
+                .join(' ');
         }
 
-        function submitAnswer() {
-            const userAnswer = parseFloat(document.getElementById('answer').value);
-            if (userAnswer === currentQuestion.answer) {
+        function submitAnswer(selectedAnswer) {
+            if (selectedAnswer === currentQuestion.answer) {
                 score++;
             }
 
@@ -230,6 +197,5 @@
             location.reload();
         }
     </script>
-
 </body>
 </html>
